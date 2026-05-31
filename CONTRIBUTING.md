@@ -1,6 +1,8 @@
 # Contributing
 
-Thanks for taking the time to contribute to a Gigly project. This is the organization-wide contributing guide. Individual repositories may add their own `CONTRIBUTING.md` with project-specific details, which takes precedence over this one.
+Thanks for taking the time to contribute to a Gigly project. This is the organization-wide contributing guide.
+Individual repositories may add their own `CONTRIBUTING.md` with project-specific details, which takes
+precedence over this one.
 
 ## Getting started
 
@@ -33,7 +35,8 @@ Thanks for taking the time to contribute to a Gigly project. This is the organiz
 
 ## Reporting issues
 
-Use the issue templates to report bugs or request features. For security vulnerabilities, do **not** open a public issue — follow the process in [`SECURITY.md`](SECURITY.md).
+Use the issue templates to report bugs or request features. For security vulnerabilities, do **not** open a
+public issue — follow the process in [`SECURITY.md`](SECURITY.md).
 
 ## Code of conduct
 
