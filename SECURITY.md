@@ -12,7 +12,7 @@ Instead, report them privately through one of the following channels:
 
 - **GitHub private vulnerability reporting** — use the **"Report a vulnerability"** button under the
   **Security** tab of the affected repository. This is the preferred method.
-- **Email** — contact us at `<INSERT SECURITY CONTACT EMAIL>` if you are unable to use GitHub's reporting tool.
+- **Email** — contact us at `security@gogigly.com` if you are unable to use GitHub's reporting tool.
 
 When reporting, please include as much of the following as you can:
 
