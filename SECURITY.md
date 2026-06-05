@@ -26,12 +26,39 @@ describe the exposure rather than attaching the data itself.
 
 ## What to expect
 
-- We will acknowledge your report as soon as we are able.
-- We will investigate, keep you informed of our progress, and let you know once the issue is resolved.
-- We ask that you give us a reasonable opportunity to address the issue before any public disclosure.
+After you submit a report:
+
+- We will acknowledge it within **2 business days**.
+- We will provide an initial assessment within **5 business days**.
+- We will keep you informed of our progress at least every **two weeks** until the issue is resolved.
+- We will credit you in any public advisory, unless you ask us not to.
+
+## Coordinated disclosure
+
+We follow a coordinated disclosure model. We ask that you:
+
+- Give us a reasonable window to investigate and remediate before any public disclosure — typically
+  **90 days**, sooner for trivial fixes.
+- Avoid accessing, modifying, or destroying data that is not yours.
+- Avoid actions that degrade service availability for legitimate users.
+- Comply with all applicable laws and regulations.
+
+In return, we commit to working with you in good faith and will not pursue legal action against researchers
+who report vulnerabilities in line with this policy.
 
 ## Scope
 
 This policy applies to repositories owned by the [`gigly-inc`](https://github.com/gigly-inc) organization.
 Vulnerabilities in third-party dependencies should be reported to the relevant upstream project, though we
 welcome a heads-up so we can track and mitigate them.
+
+The following are out of scope:
+
+- Social engineering of Gigly staff or contractors.
+- Physical attacks against Gigly personnel or facilities.
+- Denial-of-service attacks, volumetric or otherwise.
+
+## Supported versions
+
+Security fixes are applied to the latest released version of each product. Older versions may receive
+critical fixes at our discretion.
