@@ -1,4 +1,4 @@
-# Gigly - Community Health Files
+<h1 align="center">Gigly - Community Health Files</h1>
 
 This repository contains the default [community health files][health-files] for the
 [`Gigly`](https://github.com/gigly-inc) organization.
