@@ -23,6 +23,15 @@
 #                          not inflate from frequent feature releases.
 #   - use-app-token        Mint a GitHub App token instead of GITHUB_TOKEN (see Auth).
 #
+# Outputs, from release-please, for gating jobs that ship a release:
+#   - release_created      'true' when this run created the release, else 'false'.
+#   - tag_name             The release's tag, e.g. v1.4.2 (unset with no release).
+#   - version              The release's version, e.g. 1.4.2 (unset with no release).
+#   - sha                  The commit the release was tagged at (unset with no release).
+#
+#   A caller gates a job on the release with
+#     if: needs.<job>.outputs.release_created == 'true'
+#
 # Auth:
 #   - Default: the automatic GITHUB_TOKEN — fine for repos whose tag is consumed
 #     out-of-band (e.g. Packagist/npm webhooks). NOTE: this requires the org/repo
@@ -69,6 +78,19 @@ on:
                 type: boolean
                 required: false
                 default: false
+        outputs:
+            release_created:
+                description: "'true' when this run created the release, otherwise 'false'"
+                value: ${{ jobs.release.outputs.release_created }}
+            tag_name:
+                description: The release's tag, unset when no release was created
+                value: ${{ jobs.release.outputs.tag_name }}
+            version:
+                description: The release's version, unset when no release was created
+                value: ${{ jobs.release.outputs.version }}
+            sha:
+                description: The commit the release was tagged at, unset when no release was created
+                value: ${{ jobs.release.outputs.sha }}
         secrets:
             RELEASE_APP_CLIENT_ID:
                 description: GitHub App Client ID, required when use-app-token is true
@@ -109,6 +131,12 @@ jobs:
         name: Release Please
         runs-on: ubuntu-latest
 
+        outputs:
+            release_created: ${{ steps.release-please.outputs.release_created || 'false' }}
+            tag_name: ${{ steps.release-please.outputs.tag_name }}
+            version: ${{ steps.release-please.outputs.version }}
+            sha: ${{ steps.release-please.outputs.sha }}
+
         steps:
             -   name: Mint app token
                 id: app-token
@@ -121,6 +149,7 @@ jobs:
                     permission-pull-requests: write
 
             -   name: Release Please
+                id: release-please
                 uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
                 with:
                     token: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
