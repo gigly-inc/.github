@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/gigly-inc/.github/compare/v1.1.0...v1.2.0) (2026-10-18)
+
+
+### Features
+
+* **release:** expose release-please's outputs to callers ([#48](https://github.com/gigly-inc/.github/issues/48)) ([01c10e3](https://github.com/gigly-inc/.github/commit/01c10e3504f30cdb0c19acb98f1c911fc27b5d64))
+
 ## [1.1.0](https://github.com/gigly-inc/.github/compare/v1.0.0...v1.1.0) (2026-09-30)
 
 
