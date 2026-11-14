@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/gigly-inc/.github/compare/v1.2.0...v1.3.0) (2026-11-14)
+
+
+### Features
+
+* **release:** release a repository's packages from a release-please manifest ([#55](https://github.com/gigly-inc/.github/issues/55)) ([b6e793f](https://github.com/gigly-inc/.github/commit/b6e793f8543dd99e4a9bc390bb152d41105b2daa))
+
 ## [1.2.0](https://github.com/gigly-inc/.github/compare/v1.1.0...v1.2.0) (2026-10-18)
 
 
