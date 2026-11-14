@@ -31,6 +31,19 @@
 #   - manifest-file        release-please manifest of each package's version.
 #                          In manifest mode either file left unset takes
 #                          release-please's default name.
+#   - skip-github-release  Only open/update the Release PR; never tag or release.
+#   - skip-github-pull-request
+#                          Only tag and release a merged Release PR; never open
+#                          or update one. With skip-github-release this lets a
+#                          caller run checks between the merge and the tag, in
+#                          a job of its own.
+#   - environment          Deployment environment the job runs in, so a caller
+#                          can hold the App secrets in an environment that only
+#                          the tagging job may enter (default none).
+#   - concurrency-group    Concurrency group for the run (default
+#                          release-please-<target-branch>). A tagging call gives
+#                          its own, so a queued Release PR update cannot cancel
+#                          it while it waits.
 #
 # Outputs, from release-please, for gating jobs that ship a release:
 #   - release_created      'true' when this run created the release, else 'false'.
@@ -109,6 +122,26 @@ on:
                 type: string
                 required: false
                 default: ''
+            skip-github-release:
+                description: Open or update the Release PR only, never creating a tag or GitHub Release
+                type: boolean
+                required: false
+                default: false
+            skip-github-pull-request:
+                description: Tag and release a merged Release PR only, never opening or updating one
+                type: boolean
+                required: false
+                default: false
+            environment:
+                description: The deployment environment the release job runs in; none when empty
+                type: string
+                required: false
+                default: ''
+            concurrency-group:
+                description: The run's concurrency group; release-please-<target-branch> when empty
+                type: string
+                required: false
+                default: ''
         outputs:
             release_created:
                 description: "'true' when this run created the release, otherwise 'false'"
@@ -151,7 +184,7 @@ permissions:
 # Serialise release runs per branch so rapid pushes can't race on the standing
 # Release PR. Never cancel in-flight runs — one may be cutting a tag/release.
 concurrency:
-    group: release-please-${{ inputs.target-branch }}
+    group: ${{ inputs.concurrency-group || format('release-please-{0}', inputs.target-branch) }}
     cancel-in-progress: false
 
 # ==============================================================================
@@ -169,6 +202,7 @@ jobs:
     release:
         name: Release Please
         runs-on: ubuntu-latest
+        environment: ${{ inputs.environment }}
 
         outputs:
             release_created: ${{ steps.release-please.outputs.release_created || 'false' }}
@@ -203,6 +237,8 @@ jobs:
                     config-file: ${{ inputs.config-file }}
                     manifest-file: ${{ inputs.manifest-file }}
                     target-branch: ${{ inputs.target-branch }}
+                    skip-github-release: ${{ inputs.skip-github-release }}
+                    skip-github-pull-request: ${{ inputs.skip-github-pull-request }}
 
             # The action names a non-root package's outputs <path>--<key>, which a
             # reusable workflow cannot declare, so they are folded into one object.
