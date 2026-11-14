@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/gigly-inc/.github/compare/v1.3.0...v1.4.0) (2026-11-14)
+
+
+### Features
+
+* **release:** let a caller split the release pull request from the release ([#57](https://github.com/gigly-inc/.github/issues/57)) ([b349eaf](https://github.com/gigly-inc/.github/commit/b349eaf88539e4fb555a7a6595f7737d8cbb7905))
+
 ## [1.3.0](https://github.com/gigly-inc/.github/compare/v1.2.0...v1.3.0) (2026-11-14)
 
 
