@@ -176,7 +176,7 @@ jobs:
             version: ${{ steps.release-please.outputs.version }}
             sha: ${{ steps.release-please.outputs.sha }}
             paths_released: ${{ steps.release-please.outputs.paths_released || '[]' }}
-            releases: ${{ steps.releases.outputs.releases }}
+            releases: ${{ steps.releases.outputs.releases || '{}' }}
 
         env:
             MANIFEST_MODE: ${{ inputs.config-file != '' || inputs.manifest-file != '' }}
@@ -206,8 +206,11 @@ jobs:
 
             # The action names a non-root package's outputs <path>--<key>, which a
             # reusable workflow cannot declare, so they are folded into one object.
+            # Gated on a release because a run that updates the release PR adds its
+            # whole body to the outputs, which can exceed the env var size limit.
             -   name: Collect releases
                 id: releases
+                if: steps.release-please.outputs.releases_created == 'true'
                 env:
                     OUTPUTS: ${{ toJSON(steps.release-please.outputs) }}
                 run: |
