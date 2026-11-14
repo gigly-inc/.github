@@ -1,9 +1,12 @@
 # ==============================================================================
 # REUSABLE WORKFLOW: Release
 # ==============================================================================
-# Trunk-based release automation via release-please. There are no per-repo
-# config files: behaviour comes from release-please's built-in defaults plus the
-# `release-type` input, and the version is derived from the latest git tag.
+# Trunk-based release automation via release-please. By default there are no
+# per-repo config files: behaviour comes from release-please's built-in defaults
+# plus the `release-type` input, and the version is derived from the latest git
+# tag. A repository that releases several packages sets `config-file` or
+# `manifest-file` instead, and release-please reads every package's release
+# type, versioning and tag format from that config and manifest.
 #
 # Behaviour:
 #   - On every push to the tracked branch, release-please opens/updates a single
@@ -22,15 +25,29 @@
 #                          always-bump-patch for deployed apps so the version does
 #                          not inflate from frequent feature releases.
 #   - use-app-token        Mint a GitHub App token instead of GITHUB_TOKEN (see Auth).
+#   - config-file          release-please config; setting it or manifest-file
+#                          turns on manifest mode, where release-type and
+#                          versioning-strategy are ignored.
+#   - manifest-file        release-please manifest of each package's version.
+#                          In manifest mode either file left unset takes
+#                          release-please's default name.
 #
 # Outputs, from release-please, for gating jobs that ship a release:
 #   - release_created      'true' when this run created the release, else 'false'.
 #   - tag_name             The release's tag, e.g. v1.4.2 (unset with no release).
 #   - version              The release's version, e.g. 1.4.2 (unset with no release).
 #   - sha                  The commit the release was tagged at (unset with no release).
+#   - paths_released       JSON array of the package paths released by this run.
+#   - releases             JSON object keyed by package path, each holding that
+#                          release's release_created, tag_name, version and sha.
+#
+#   In manifest mode the four single-release outputs describe the root package
+#   (path .) only.
 #
 #   A caller gates a job on the release with
 #     if: needs.<job>.outputs.release_created == 'true'
+#   or, for one package in manifest mode,
+#     if: fromJSON(needs.<job>.outputs.releases)['packages/foo'].release_created
 #
 # Auth:
 #   - Default: the automatic GITHUB_TOKEN — fine for repos whose tag is consumed
@@ -78,6 +95,20 @@ on:
                 type: boolean
                 required: false
                 default: false
+            config-file:
+                description: >-
+                    release-please config file; setting it or manifest-file releases
+                    the packages it lists in manifest mode
+                type: string
+                required: false
+                default: ''
+            manifest-file:
+                description: >-
+                    release-please manifest file; setting it or config-file releases
+                    the packages it lists in manifest mode
+                type: string
+                required: false
+                default: ''
         outputs:
             release_created:
                 description: "'true' when this run created the release, otherwise 'false'"
@@ -91,6 +122,14 @@ on:
             sha:
                 description: The commit the release was tagged at, unset when no release was created
                 value: ${{ jobs.release.outputs.sha }}
+            paths_released:
+                description: JSON array of the package paths this run released
+                value: ${{ jobs.release.outputs.paths_released }}
+            releases:
+                description: >-
+                    JSON object keyed by package path, holding each released package's
+                    release_created, tag_name, version and sha
+                value: ${{ jobs.release.outputs.releases }}
         secrets:
             RELEASE_APP_CLIENT_ID:
                 description: GitHub App Client ID, required when use-app-token is true
@@ -136,6 +175,11 @@ jobs:
             tag_name: ${{ steps.release-please.outputs.tag_name }}
             version: ${{ steps.release-please.outputs.version }}
             sha: ${{ steps.release-please.outputs.sha }}
+            paths_released: ${{ steps.release-please.outputs.paths_released || '[]' }}
+            releases: ${{ steps.releases.outputs.releases }}
+
+        env:
+            MANIFEST_MODE: ${{ inputs.config-file != '' || inputs.manifest-file != '' }}
 
         steps:
             -   name: Mint app token
@@ -153,6 +197,34 @@ jobs:
                 uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
                 with:
                     token: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
-                    release-type: ${{ inputs.release-type }}
-                    versioning-strategy: ${{ inputs.versioning-strategy }}
+                    # A release-type makes the action ignore the config and manifest.
+                    release-type: ${{ env.MANIFEST_MODE != 'true' && inputs.release-type || '' }}
+                    versioning-strategy: ${{ env.MANIFEST_MODE != 'true' && inputs.versioning-strategy || '' }}
+                    config-file: ${{ inputs.config-file }}
+                    manifest-file: ${{ inputs.manifest-file }}
                     target-branch: ${{ inputs.target-branch }}
+
+            # The action names a non-root package's outputs <path>--<key>, which a
+            # reusable workflow cannot declare, so they are folded into one object.
+            -   name: Collect releases
+                id: releases
+                env:
+                    OUTPUTS: ${{ toJSON(steps.release-please.outputs) }}
+                run: |
+                    releases=$(jq -c '
+                        . as $out
+                        | (.paths_released // "[]" | fromjson)
+                        | map(. as $path
+                            | (if $path == "." then "" else $path + "--" end) as $prefix
+                            | {
+                                key: $path,
+                                value: {
+                                    release_created: true,
+                                    tag_name: $out[$prefix + "tag_name"],
+                                    version: $out[$prefix + "version"],
+                                    sha: $out[$prefix + "sha"]
+                                }
+                            })
+                        | from_entries
+                    ' <<<"$OUTPUTS")
+                    echo "releases=$releases" >>"$GITHUB_OUTPUT"
