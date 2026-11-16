@@ -1,6 +1,6 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "description": "Renovate preset for this organization's repositories: the shared coding standards, with this organization's reusable workflows kept on their version tags",
+    "description": "Renovate preset for this organization's repositories: the shared coding standards, with this organization's reusable workflows kept on their version tags and its npm packages disabled",
     "extends": ["github>sinemacula/coding-standards"],
     "packageRules": [
         {
@@ -8,6 +8,11 @@
             "matchManagers": ["github-actions"],
             "matchPackageNames": ["gigly-inc/**"],
             "pinDigests": false
+        },
+        {
+            "description": "Renovate cannot read this organization's npm registry, so its packages stay disabled whatever the shared standards enable",
+            "matchPackageNames": ["@gigly-inc/**"],
+            "enabled": false
         }
     ]
 }

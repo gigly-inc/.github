@@ -7,8 +7,9 @@ This repository contains the default [community health files][health-files] for 
 
 ## Renovate preset
 
-`default.json` is the organization's Renovate preset. It extends the shared coding standards and keeps this
-organization's reusable workflows on their version tags. A repository uses it with:
+`default.json` is the organization's Renovate preset. It extends the shared coding standards, which update only
+themselves and GitHub Actions. It keeps this organization's reusable workflows on their version tags and disables its
+`@gigly-inc` npm packages, since Renovate cannot read their registry. A repository uses it with:
 
 ```json
 {
