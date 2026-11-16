@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/gigly-inc/.github/compare/v1.4.0...v1.4.1) (2026-11-16)
+
+
+### Bug Fixes
+
+* **renovate:** keep [@gigly-inc](https://github.com/gigly-inc) packages out of Renovate ([#59](https://github.com/gigly-inc/.github/issues/59)) ([c1eecbd](https://github.com/gigly-inc/.github/commit/c1eecbd42eebf919c8f04eff29c36356c8208cbf))
+
 ## [1.4.0](https://github.com/gigly-inc/.github/compare/v1.3.0...v1.4.0) (2026-11-14)
 
 
