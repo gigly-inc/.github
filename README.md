@@ -17,3 +17,19 @@ themselves and GitHub Actions. It keeps this organization's reusable workflows o
     "extends": ["github>gigly-inc/.github"]
 }
 ```
+
+## qlty source
+
+`source.toml` layers this organization's lint policy over the shared coding standards. Its `security/zizmor.yml`
+lets this organization's actions and reusable workflows keep their version tags, as GitHub's and the coding standards'
+own do. A repository adds it after the coding standards source in `.qlty/qlty.toml`:
+
+```toml
+[[source]]
+name = "gigly"
+repository = "https://github.com/gigly-inc/.github"
+tag = "<version>"
+```
+
+zizmor cannot extend a config, so the file repeats the coding standards' policy. Keep the two in step when that one
+changes.
