@@ -55,7 +55,7 @@ jobs:
     # ==========================================================================
     sign:
         name: Sign
-        runs-on: ubuntu-24.04-arm
+        runs-on: ubuntu-26.04-arm
 
         env:
             REGISTRY: ${{ inputs.registry }}
