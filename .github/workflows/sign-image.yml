@@ -3,7 +3,8 @@
 # ==============================================================================
 # Signs an ECR image with a KMS key and attests its build as SLSA v1 provenance,
 # stored beside it as sha256-<hex>.sig and sha256-<hex>.att and written to no
-# transparency log. The role must sign with the key and push to the repository.
+# transparency log. The role must sign with the key, and push, pull and describe
+# images in the repository.
 # ==============================================================================
 name: Sign Image
 
@@ -58,6 +59,8 @@ jobs:
 
         env:
             REGISTRY: ${{ inputs.registry }}
+            REPOSITORY: ${{ inputs.repository }}
+            DIGEST: ${{ inputs.digest }}
             IMAGE: ${{ inputs.registry }}/${{ inputs.repository }}@${{ inputs.digest }}
             KEY: awskms:///${{ inputs.key-alias-arn }}
 
@@ -79,15 +82,14 @@ jobs:
 
             -   name: Log in to the registry
                 run: |
-                    aws ecr get-login-password --region us-east-1 |
+                    aws ecr get-login-password |
                         docker login --username AWS --password-stdin "$REGISTRY"
 
             # GitHub's own build type, filled from the OIDC claims the role's trust was judged on.
             -   name: Write the provenance
                 run: |
-                    token=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-                        "$ACTIONS_ID_TOKEN_REQUEST_URL")
-                    jq '
+                    curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+                        "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq '
                         .value | split(".")[1] | gsub("-"; "+") | gsub("_"; "/") | @base64d | fromjson
                         | env.GITHUB_SERVER_URL as $server
                         | .repository as $name
@@ -110,19 +112,29 @@ jobs:
                                 }
                             }
                         }
-                    ' <<<"$token" >"$RUNNER_TEMP/provenance.json"
+                    ' >"$RUNNER_TEMP/provenance.json"
 
-            # Tags are immutable, so a put a concurrent run made first fails and is verified instead.
+            # Tags are immutable, so a put that loses to a concurrent run fails and the winner is verified.
             -   name: Sign and attest
                 run: |
+                    type=https://slsa.dev/provenance/v1
                     signed() { cosign verify --key "$KEY" --insecure-ignore-tlog=true "$IMAGE" >/dev/null; }
                     attested() {
-                        cosign verify-attestation --type slsaprovenance1 --key "$KEY" --insecure-ignore-tlog=true \
+                        cosign verify-attestation --type "$type" --key "$KEY" --insecure-ignore-tlog=true \
                             "$IMAGE" >/dev/null
                     }
 
                     signed 2>/dev/null || cosign sign --key "$KEY" --tlog-upload=false "$IMAGE" || signed
                     attested 2>/dev/null ||
-                        cosign attest --type slsaprovenance1 --predicate "$RUNNER_TEMP/provenance.json" \
+                        cosign attest --type "$type" --predicate "$RUNNER_TEMP/provenance.json" \
                             --key "$KEY" --tlog-upload=false "$IMAGE" ||
                         attested
+
+            # The verifiers read only these two tags, so nothing may be stored as an OCI referrer.
+            -   name: Check what the run left
+                run: |
+                    hex=${DIGEST#sha256:}
+                    aws ecr describe-images --repository-name "$REPOSITORY" \
+                        --image-ids "imageTag=sha256-$hex.sig" "imageTag=sha256-$hex.att" >/dev/null
+                    aws ecr list-image-referrers --repository-name "$REPOSITORY" --subject-id "imageDigest=$DIGEST" \
+                        --filter artifactStatus=ANY --query referrers | jq -e '. == []'
