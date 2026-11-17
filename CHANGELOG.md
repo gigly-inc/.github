@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/gigly-inc/.github/compare/v1.5.0...v1.6.0) (2026-11-17)
+
+
+### Features
+
+* add a qlty source that keeps this organization's actions on their tags ([#66](https://github.com/gigly-inc/.github/issues/66)) ([b3779c8](https://github.com/gigly-inc/.github/commit/b3779c8a57b99508c28c5a41886dc125dad374db))
+
 ## [1.5.0](https://github.com/gigly-inc/.github/compare/v1.4.1...v1.5.0) (2026-11-17)
 
 
