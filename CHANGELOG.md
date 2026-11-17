@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/gigly-inc/.github/compare/v1.4.1...v1.5.0) (2026-11-17)
+
+
+### Features
+
+* add a reusable workflow that signs an image and attests its build ([#63](https://github.com/gigly-inc/.github/issues/63)) ([5c84b4d](https://github.com/gigly-inc/.github/commit/5c84b4d41991874abece08b0956b5903d3ec6456))
+
 ## [1.4.1](https://github.com/gigly-inc/.github/compare/v1.4.0...v1.4.1) (2026-11-16)
 
 
