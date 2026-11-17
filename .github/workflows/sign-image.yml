@@ -1,0 +1,140 @@
+# ==============================================================================
+# REUSABLE WORKFLOW: Sign Image
+# ==============================================================================
+# Signs an ECR image with a KMS key and attests its build as SLSA v1 provenance,
+# stored beside it as sha256-<hex>.sig and sha256-<hex>.att and written to no
+# transparency log. The role must sign with the key, and push, pull and describe
+# images in the repository.
+# ==============================================================================
+name: Sign Image
+
+# ==============================================================================
+# TRIGGER
+# ==============================================================================
+on:
+    workflow_call:
+        inputs:
+            registry:
+                description: The image's registry host
+                type: string
+                required: true
+            repository:
+                description: The image's repository
+                type: string
+                required: true
+            digest:
+                description: The image's digest, sha256:<hex>
+                type: string
+                required: true
+            role-arn:
+                description: The role that signs, by ARN
+                type: string
+                required: true
+            key-alias-arn:
+                description: The KMS signing key, by alias ARN
+                type: string
+                required: true
+
+# ==============================================================================
+# PERMISSIONS
+# ==============================================================================
+permissions:
+    id-token: write
+
+# ==============================================================================
+# DEFAULTS
+# ==============================================================================
+defaults:
+    run:
+        shell: bash
+
+jobs:
+
+    # ==========================================================================
+    # JOB: SIGN
+    # ==========================================================================
+    sign:
+        name: Sign
+        runs-on: ubuntu-24.04-arm
+
+        env:
+            REGISTRY: ${{ inputs.registry }}
+            REPOSITORY: ${{ inputs.repository }}
+            DIGEST: ${{ inputs.digest }}
+            IMAGE: ${{ inputs.registry }}/${{ inputs.repository }}@${{ inputs.digest }}
+            KEY: awskms:///${{ inputs.key-alias-arn }}
+
+        steps:
+            # Cosign 3 stores signatures as OCI referrers; the verifiers read them under tags.
+            -   name: Install cosign
+                run: |
+                    curl -fsSLo "$RUNNER_TEMP/cosign" \
+                        https://github.com/sigstore/cosign/releases/download/v2.6.5/cosign-linux-arm64
+                    echo "426193b4c5da4d4d643e822f48fe0cc8a476ca1782a272704831f5a0cef716d7  $RUNNER_TEMP/cosign" |
+                        sha256sum --check --strict
+                    sudo install -m 0755 "$RUNNER_TEMP/cosign" /usr/local/bin/cosign
+
+            -   name: Assume the signing role
+                uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+                with:
+                    role-to-assume: ${{ inputs.role-arn }}
+                    aws-region: us-east-1
+
+            -   name: Log in to the registry
+                run: |
+                    aws ecr get-login-password |
+                        docker login --username AWS --password-stdin "$REGISTRY"
+
+            # GitHub's own build type, filled from the OIDC claims the role's trust was judged on.
+            -   name: Write the provenance
+                run: |
+                    curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+                        "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq '
+                        .value | split(".")[1] | gsub("-"; "+") | gsub("_"; "/") | @base64d | fromjson
+                        | env.GITHUB_SERVER_URL as $server
+                        | .repository as $name
+                        | "\($server)/\($name)" as $repository
+                        | .ref as $ref
+                        | (.workflow_ref | ltrimstr("\($name)/") | rtrimstr("@\($ref)")) as $path
+                        | {
+                            buildDefinition: {
+                                buildType: "https://actions.github.io/buildtypes/workflow/v1",
+                                externalParameters: {workflow: {ref: $ref, repository: $repository, path: $path}},
+                                internalParameters: {
+                                    github: {event_name, repository_id, repository_owner_id, runner_environment}
+                                },
+                                resolvedDependencies: [{uri: "git+\($repository)@\($ref)", digest: {gitCommit: .sha}}]
+                            },
+                            runDetails: {
+                                builder: {id: "\($server)/\(.job_workflow_ref)"},
+                                metadata: {
+                                    invocationId: "\($repository)/actions/runs/\(.run_id)/attempts/\(.run_attempt)"
+                                }
+                            }
+                        }
+                    ' >"$RUNNER_TEMP/provenance.json"
+
+            # Tags are immutable, so a put that loses to a concurrent run fails and the winner is verified.
+            -   name: Sign and attest
+                run: |
+                    type=https://slsa.dev/provenance/v1
+                    signed() { cosign verify --key "$KEY" --insecure-ignore-tlog=true "$IMAGE" >/dev/null; }
+                    attested() {
+                        cosign verify-attestation --type "$type" --key "$KEY" --insecure-ignore-tlog=true \
+                            "$IMAGE" >/dev/null
+                    }
+
+                    signed 2>/dev/null || cosign sign --key "$KEY" --tlog-upload=false "$IMAGE" || signed
+                    attested 2>/dev/null ||
+                        cosign attest --type "$type" --predicate "$RUNNER_TEMP/provenance.json" \
+                            --key "$KEY" --tlog-upload=false "$IMAGE" ||
+                        attested
+
+            # The verifiers read only these two tags, so nothing may be stored as an OCI referrer.
+            -   name: Check what the run left
+                run: |
+                    hex=${DIGEST#sha256:}
+                    aws ecr describe-images --repository-name "$REPOSITORY" \
+                        --image-ids "imageTag=sha256-$hex.sig" "imageTag=sha256-$hex.att" >/dev/null
+                    aws ecr list-image-referrers --repository-name "$REPOSITORY" --subject-id "imageDigest=$DIGEST" \
+                        --filter artifactStatus=ANY --query referrers | jq -e '. == []'
