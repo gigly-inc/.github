@@ -1,0 +1,20 @@
+# The shared policy from sinemacula/coding-standards, which zizmor cannot extend,
+# with this organization's actions and workflows also kept on their tags.
+rules:
+    unpinned-uses:
+        config:
+            policies:
+                actions/*: ref-pin
+                github/*: ref-pin
+                sinemacula/*: ref-pin
+                gigly-inc/*: ref-pin
+                '*': hash-pin
+
+    # Flags every checkout that keeps its token, which release and deploy jobs
+    # need.
+    artipacked:
+        disable: true
+
+    # Only suggests the `$/` spelling for a repository's own reusable workflows.
+    self-repository:
+        disable: true

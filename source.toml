@@ -1,0 +1,6 @@
+config_version = "0"
+
+# Layered after sinemacula/coding-standards, so a config exported here replaces
+# the one that source exports under the same name.
+[plugins.definitions.zizmor]
+exported_config_paths = ["security/zizmor.yml"]
