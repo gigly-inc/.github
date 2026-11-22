@@ -19,6 +19,12 @@ name = "sinemacula"
 repository = "https://github.com/sinemacula/coding-standards"
 tag = "v1.31.2"
 
+# Its zizmor policy also keeps gigly-inc actions and workflows on their tags.
+[[source]]
+name = "gigly"
+repository = "https://github.com/gigly-inc/.github"
+tag = "v1.6.0"
+
 [[plugin]]
 name = "markdownlint"
 mode = "comment"
