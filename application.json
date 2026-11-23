@@ -1,0 +1,21 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "description": "Renovate preset for this organization's applications: the organization preset, with composer and npm updates enabled and lock files maintained weekly",
+    "extends": ["github>gigly-inc/.github", ":maintainLockFilesWeekly"],
+    "packageRules": [
+        {
+            "description": "Applications ship their lock files, so their composer and npm dependencies are updated; this organization's npm packages stay disabled",
+            "matchManagers": ["composer", "npm"],
+            "matchPackageNames": ["!@gigly-inc/**"],
+            "enabled": true
+        },
+        {
+            "description": "Raise minor and patch updates as one weekly PR; majors keep their own PRs and the coding standards keep their own group",
+            "matchManagers": ["composer", "npm"],
+            "matchUpdateTypes": ["minor", "patch"],
+            "matchPackageNames": ["!sinemacula/coding-standards", "!@sinemacula/coding-standards", "!sinemacula/coding-standards-laravel"],
+            "groupName": "Non-major dependencies",
+            "schedule": ["* 0-3 * * 1"]
+        }
+    ]
+}
