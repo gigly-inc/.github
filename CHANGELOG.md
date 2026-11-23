@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/gigly-inc/.github/compare/v1.6.0...v1.7.0) (2026-11-23)
+
+
+### Features
+
+* add a Renovate preset for applications ([#73](https://github.com/gigly-inc/.github/issues/73)) ([971e179](https://github.com/gigly-inc/.github/commit/971e17976a9dc3b49627ca79d68c98c5133097b6))
+
 ## [1.6.0](https://github.com/gigly-inc/.github/compare/v1.5.0...v1.6.0) (2026-11-17)
 
 
