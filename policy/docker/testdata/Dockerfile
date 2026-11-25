@@ -1,0 +1,9 @@
+ARG BASE_REGISTRY=public.ecr.aws
+
+FROM ${BASE_REGISTRY}/docker/library/node:22-alpine@sha256:5b05da3f938f1c604b24c633646d48805a6667f378cb4908438616f3cc48a0bf AS base
+
+FROM base
+
+USER nobody
+
+HEALTHCHECK NONE

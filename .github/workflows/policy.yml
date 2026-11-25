@@ -1,0 +1,52 @@
+# ==============================================================================
+# POLICY
+# ==============================================================================
+# Runs the conftest policies' tests.
+# ==============================================================================
+name: Policy
+
+# ==============================================================================
+# TRIGGER
+# ==============================================================================
+on:
+    pull_request:
+    push:
+        branches: [ master ]
+
+# ==============================================================================
+# PERMISSIONS
+# ==============================================================================
+permissions:
+    contents: read
+
+# ==============================================================================
+# DEFAULTS
+# ==============================================================================
+defaults:
+    run:
+        shell: bash
+
+jobs:
+
+    # ==========================================================================
+    # JOB: TEST
+    # ==========================================================================
+    test:
+        name: Test
+        runs-on: ubuntu-26.04-arm
+
+        steps:
+            -   name: Check out the repository
+                uses: actions/checkout@v7
+                with:
+                    persist-credentials: false
+
+            # Checks the test Dockerfile, the repository's only one, and leaves conftest installed.
+            -   name: Run the action
+                uses: ./.github/actions/base-images
+
+            -   name: Check the format
+                run: '"$RUNNER_TEMP/conftest" fmt --check policy'
+
+            -   name: Run the tests
+                run: '"$RUNNER_TEMP/conftest" verify --policy policy'
