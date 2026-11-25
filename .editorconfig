@@ -22,3 +22,6 @@ max_line_length = off
 
 [*.toml]
 max_line_length = off
+
+[*.rego]
+indent_style = tab

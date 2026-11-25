@@ -1,0 +1,50 @@
+# ==============================================================================
+# ACTION: Base Images
+# ==============================================================================
+# Fails when a tracked Dockerfile pulls an image other than through the
+# registry's pull-through cache, as ${BASE_REGISTRY}/<image>@sha256:<digest>.
+# Run it after checking out the repository, on a Linux runner. The policy is
+# policy/docker at the version the caller pins.
+# ==============================================================================
+name: Base Images
+description: Checks every Dockerfile pulls its images through the cache, pinned by digest.
+
+runs:
+    using: composite
+    steps:
+        -   name: Install conftest
+            shell: bash
+            env:
+                ARCH: ${{ runner.arch }}
+            run: |
+                case "$ARCH" in
+                    X64) build=Linux_x86_64 sum=c3f6b2a753bd56e377a1e51a95ae3e057f926f2e9139f7d5b5dfbbaf810f7985 ;;
+                    ARM64) build=Linux_arm64 sum=218c682e110ae7e826dc14a746a6f9b43eb782643dbe730b771fd305634e3f47 ;;
+                    *) echo "::error::No conftest build for $ARCH." && exit 1 ;;
+                esac
+                curl -fsSLo "$RUNNER_TEMP/conftest.tar.gz" \
+                    "https://github.com/open-policy-agent/conftest/releases/download/v0.71.1/conftest_0.71.1_$build.tar.gz"
+                echo "$sum  $RUNNER_TEMP/conftest.tar.gz" | sha256sum --check --strict
+                tar -xzf "$RUNNER_TEMP/conftest.tar.gz" -C "$RUNNER_TEMP" conftest
+
+        -   name: Check the Dockerfiles
+            shell: bash
+            env:
+                POLICY: ${{ github.action_path }}/../../../policy/docker
+            run: |
+                mapfile -d '' files < <(git ls-files -z -- '*Dockerfile' '*Dockerfile.*' '*.Dockerfile' '*Containerfile')
+                if [ "${#files[@]}" -eq 0 ]; then
+                    echo "::error::The repository has no Dockerfile."
+                    exit 1
+                fi
+
+                # A syntax directive pulls the frontend image, and the parser drops it.
+                if grep -Eil '^[[:space:]]*#[[:space:]]*syntax[[:space:]]*=' "${files[@]}"; then
+                    echo "::error::A syntax directive pulls an image the policy cannot check."
+                    exit 1
+                fi
+
+                # Run away from the repository, so a conftest.toml there cannot change the result.
+                files=("${files[@]/#/$PWD/}")
+                cd "$RUNNER_TEMP"
+                ./conftest test --parser dockerfile --namespace docker.base_images --policy "$POLICY" "${files[@]}"
