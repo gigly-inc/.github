@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/gigly-inc/.github/compare/v1.7.0...v1.8.0) (2026-11-25)
+
+
+### Features
+
+* add an action that checks Dockerfiles pull images through the cache ([#77](https://github.com/gigly-inc/.github/issues/77)) ([9bf2edc](https://github.com/gigly-inc/.github/commit/9bf2edc327db950595f562bd550347dfd9dd2626))
+
 ## [1.7.0](https://github.com/gigly-inc/.github/compare/v1.6.0...v1.7.0) (2026-11-23)
 
 
